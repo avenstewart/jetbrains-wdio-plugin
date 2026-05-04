@@ -1,0 +1,18 @@
+jetbrains-run-wdio
+Copyright 2026 Perry Weather, Inc.
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file in this repository for the full license text.
+
+---
+
+Prior art and acknowledgments
+
+This plugin was rebuilt from scratch but draws architectural inspiration from
+idea-run-wdio by Wenqing Zhang, also licensed under Apache-2.0:
+
+  https://github.com/winkingzhang/idea-run-wdio
+
+No source code from that project is included in this repository. Credit is
+recorded here in keeping with the spirit of Apache-2.0 even where strict
+notice obligations do not apply.
