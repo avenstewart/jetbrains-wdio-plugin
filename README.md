@@ -1,33 +1,18 @@
-# idea-run-wdio
+# jetbrains-run-wdio
 
-![Build](https://github.com/wenqingzhang/idea-run-wdio/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/16147.svg)](https://plugins.jetbrains.com/plugin/16147)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/16147.svg)](https://plugins.jetbrains.com/plugin/16147)
-
+A JetBrains IDE plugin that runs WebdriverIO tests directly from the editor.
 
 <!-- Plugin description -->
-The WebdriverIO Plugin is going to be your brilliant ideas to run test cases over [@wdio/cli](https://webdriver.io/docs/gettingstarted).
+Run WebdriverIO tests directly from the editor in WebStorm and IntelliJ IDEA Ultimate.
 
-NOTE: Initial only support Mocha framework
-
-## Features
-- Run Mocha test cases for WebdriverIO via @wdio/cli
-- Automatically detect wdio config
-- Automatically generate running setting
-
+Adds a WebdriverIO run configuration that invokes <code>@wdio/cli</code> with the correct arguments so the WDIO runner, capabilities, services, and hooks all load. Supports Mocha, Jasmine, and Cucumber/Gherkin, with gutter Run arrows on test files and feature files.
 <!-- Plugin description end -->
 
-## Installation
+## Status
 
-- Using IDE built-in plugin system:
+Pre-release. Not yet published to the JetBrains Marketplace. A comprehensive
+README will land alongside the first stable build.
 
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "
-  WebdriverIO"</kbd> >
-  <kbd>Install Plugin</kbd>
+## License
 
-- Manually:
-
-  Download the [latest release](https://github.com/wenqingzhang/idea-run-wdio/releases/latest) and install it manually
-  using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
-
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

@@ -1,8 +1,7 @@
 <idea-plugin>
-    <id>org.zhangwenqing.wdio.idea-run-wdio</id>
+    <id>com.perryweather.wdio</id>
     <name>WebdriverIO</name>
-    <vendor email="me@zhangwenqing.org" url="http://www.zhangwenqing.org">Wenqing ZHANG</vendor>
-    <version>2023.1.28-0</version>
+    <vendor url="https://perryweather.com" email="https://github.com/avenstewart">Perry Weather, Inc.</vendor>
     <category>Tools Integration</category>
 
     <!-- Product and plugin compatibility requirements -->
