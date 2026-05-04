@@ -1,1 +1,1 @@
-rootProject.name = "idea-run-wdio"
+rootProject.name = "jetbrains-run-wdio"
