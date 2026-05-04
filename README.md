@@ -1,4 +1,4 @@
-# jetbrains-run-wdio
+# jetbrains-wdio-plugin
 
 A JetBrains IDE plugin that runs WebdriverIO tests directly from the editor.
 
