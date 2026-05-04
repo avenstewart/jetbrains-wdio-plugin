@@ -11,9 +11,9 @@
     <depends>NodeJS</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <configurationType implementation="org.zhangwenqing.jetbrains.execution.WdioConfigurationType"/>
-        <programRunner implementation="org.zhangwenqing.jetbrains.execution.WdioRunProgramRunner"/>
-        <runConfigurationProducer implementation="org.zhangwenqing.jetbrains.execution.WdioRunConfigurationProducer"/>
+        <configurationType implementation="com.perryweather.wdio.runner.WdioConfigurationType"/>
+        <programRunner implementation="com.perryweather.wdio.runner.WdioRunProgramRunner"/>
+        <runConfigurationProducer implementation="com.perryweather.wdio.producer.WdioRunConfigurationProducer"/>
     </extensions>
 
 </idea-plugin>

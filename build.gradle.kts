@@ -22,7 +22,7 @@ dependencies {
             providers.gradleProperty("platformType"),
             providers.gradleProperty("platformVersion"),
         )
-        bundledPlugins("JavaScript", "NodeJS", "gherkin")
+        bundledPlugins("JavaScript", "NodeJS")
 
         pluginVerifier()
         zipSigner()

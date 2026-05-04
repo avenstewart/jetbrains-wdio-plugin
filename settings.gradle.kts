@@ -1,5 +1,11 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
 plugins {
-    alias(libs.plugins.foojay.resolver)
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 rootProject.name = "jetbrains-run-wdio"
