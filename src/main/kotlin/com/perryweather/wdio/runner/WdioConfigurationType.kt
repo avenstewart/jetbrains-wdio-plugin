@@ -20,13 +20,13 @@ class WdioConfigurationType : ConfigurationType {
 
     override fun getIcon(): Icon = IconLoader.getIcon("/icons/wdio.svg", javaClass)
 
-    override fun getId(): String = "WdioConfigurationType"
+    override fun getId(): String = "com.perryweather.wdio.WdioConfigurationType"
 
     override fun getConfigurationFactories(): Array<ConfigurationFactory> = arrayOf(factory)
 }
 
 class WdioConfigurationFactory(type: WdioConfigurationType) : ConfigurationFactory(type) {
-    override fun getId(): String = "Wdio"
+    override fun getId(): String = "com.perryweather.wdio.WdioFactory"
 
     override fun createTemplateConfiguration(project: Project): RunConfiguration =
         WdioRunConfiguration(project, this, "WebdriverIO")

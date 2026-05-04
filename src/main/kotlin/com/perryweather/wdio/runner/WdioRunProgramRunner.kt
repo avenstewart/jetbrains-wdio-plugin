@@ -8,7 +8,7 @@ import com.intellij.execution.configurations.RunnerSettings
 import com.intellij.execution.runners.GenericProgramRunner
 
 class WdioRunProgramRunner : GenericProgramRunner<RunnerSettings>() {
-    override fun getRunnerId(): String = "WdioJavaScriptProgramRunner"
+    override fun getRunnerId(): String = "com.perryweather.wdio.WdioRunner"
 
     override fun canRun(executorId: String, profile: RunProfile): Boolean =
         profile is WdioRunConfiguration
