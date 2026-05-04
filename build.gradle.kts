@@ -1,142 +1,98 @@
 import org.jetbrains.changelog.Changelog
-import org.jetbrains.changelog.markdownToHTML
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-buildscript {
-	repositories {
-//		// use Aliyun mirror to resolve network issue in China
-//		maven("https://maven.aliyun.com/repository/public")
-		mavenCentral()
-		maven("https://dl.bintray.com/jetbrains/intellij-plugin-service")
-	}
-}
 
 plugins {
-	// gradle-intellij-plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
-	id("org.jetbrains.intellij") version "1.12.0"
-	// gradle-changelog-plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
-	id("org.jetbrains.changelog") version "2.0.0"
-	// Java support
-	java
-	// Kotlin support
-	kotlin("jvm") version "1.8.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.intellij.platform)
+    alias(libs.plugins.changelog)
 }
 
-fun properties(key: String) = project.findProperty(key).toString()
-
-group = properties("pluginGroup")
-version = properties("pluginVersion")
+group = providers.gradleProperty("pluginGroup").get()
+version = providers.gradleProperty("pluginVersion").get()
 
 repositories {
-	if (!System.getenv("USE_ALI_REPO").isNullOrEmpty()) {
-		maven {
-			setUrl("https://maven.aliyun.com/nexus/content/groups/public/")
-		}
-	}
-	mavenCentral()
+    mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 dependencies {
-	implementation(kotlin("stdlib"))
-	testImplementation("junit", "junit", "4.12")
+    intellijPlatform {
+        create(
+            providers.gradleProperty("platformType"),
+            providers.gradleProperty("platformVersion"),
+        )
+        bundledPlugins("JavaScript", "NodeJS", "gherkin")
+
+        pluginVerifier()
+        zipSigner()
+    }
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-// Configure gradle-intellij-plugin plugin.
-// Read more: https://github.com/JetBrains/gradle-intellij-plugin
-intellij {
-	pluginName.set(properties("pluginName"))
-	version.set(properties("platformVersion"))
-	type.set(properties("platformType")) // Target IDE Platform
-	downloadSources.set(properties("platformDownloadSources").toBoolean())
-	updateSinceUntilBuild.set(true)
-
-	// Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file.
-	plugins.set(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
-
-}
-
-// Configure Gradle Changelog Plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
-changelog {
-	groups.set(emptyList())
-	version.set(properties("pluginVersion"))
-	repositoryUrl.set(properties("pluginRepositoryUrl"))
-}
-
-// Set the JVM language level used to build the project. Use Java 11 for 2020.3+, and Java 17 for 2022.2+.
 kotlin {
-	jvmToolchain(17)
+    jvmToolchain(21)
 }
 
-tasks {
-	wrapper {
-		gradleVersion = "7.6"
-	}
+intellijPlatform {
+    pluginConfiguration {
+        version = providers.gradleProperty("pluginVersion")
 
-	withType<KotlinCompile> {
-		kotlinOptions.jvmTarget = "17"
-		kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=all-compatibility")
-	}
+        ideaVersion {
+            sinceBuild = providers.gradleProperty("pluginSinceBuild")
+            untilBuild = provider { null }
+        }
 
-	patchPluginXml {
-		version.set(properties("pluginVersion"))
-		sinceBuild.set(properties("pluginSinceBuild"))
-		untilBuild.set(properties("pluginUntilBuild"))
+        val pluginDescriptionStart = "<!-- Plugin description -->"
+        val pluginDescriptionEnd = "<!-- Plugin description end -->"
+        description = providers
+            .fileContents(layout.projectDirectory.file("README.md"))
+            .asText
+            .map { readme ->
+                require(readme.contains(pluginDescriptionStart) && readme.contains(pluginDescriptionEnd)) {
+                    "Plugin description markers not found in README.md"
+                }
+                readme
+                    .substringAfter(pluginDescriptionStart)
+                    .substringBefore(pluginDescriptionEnd)
+                    .trim()
+            }
 
-		// Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
-		val start = "<!-- Plugin description -->"
-		val end = "<!-- Plugin description end -->"
-		pluginDescription.set(
-		  file("README.md").readText().lines().run {
-				if (!containsAll(listOf(start, end)))
-				{
-					throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
-				}
-				subList(indexOf(start) + 1, indexOf(end))
-			}.joinToString("\n").run { markdownToHTML(this) }
-		)
+        changeNotes = providers.gradleProperty("pluginVersion").map { version ->
+            with(changelog) {
+                renderItem(
+                    (getOrNull(version) ?: getUnreleased())
+                        .withHeader(false)
+                        .withEmptySections(false),
+                    Changelog.OutputType.HTML,
+                )
+            }
+        }
+    }
 
-		// Get the latest available change notes from the changelog file
-		changeNotes.set(provider {
-			with(changelog) {
-				renderItem(
-				  getOrNull(properties("pluginVersion")) ?: kotlin.runCatching { getLatest() }.getOrElse { getUnreleased() },
-				  Changelog.OutputType.HTML,
-				)
-			}
-		  }
-		)
-	}
+    pluginVerification {
+        ides {
+            recommended()
+        }
+    }
 
-	// Configure UI tests plugin
-	// Read more: https://github.com/JetBrains/intellij-ui-test-robot
-	runIdeForUiTests {
-		systemProperty("robot-server.port", "8082")
-		systemProperty("ide.mac.message.dialogs.as.sheets", "false")
-		systemProperty("jb.privacy.policy.text", "<!--999.999-->")
-		systemProperty("jb.consents.confirmation.enabled", "false")
-	}
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
 
-	runPluginVerifier {
-		ideVersions.set(
-		  properties("pluginVerifierIdeVersions").split(',')
-			.map(String::trim)
-			.filter(String::isNotEmpty)
-		)
-	}
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+}
 
-	signPlugin {
-		certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
-		privateKey.set(System.getenv("PRIVATE_KEY"))
-		password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
-	}
+changelog {
+    groups = emptyList()
+    repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
+}
 
-	publishPlugin {
-		dependsOn("patchChangelog")
-		token.set(System.getenv("PUBLISH_TOKEN"))
-
-		// pluginVersion is based on the SemVer (https://semver.org) and supports pre-release labels, like 2.1.7-alpha.3
-		// Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
-		// https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
-		channels.set(listOf("stable"))
-	}
+tasks.test {
+    useJUnitPlatform()
 }
