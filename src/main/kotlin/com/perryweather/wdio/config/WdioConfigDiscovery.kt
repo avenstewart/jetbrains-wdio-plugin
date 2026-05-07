@@ -3,9 +3,11 @@
 
 package com.perryweather.wdio.config
 
+import com.perryweather.wdio.framework.Framework
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.isDirectory
+import kotlin.io.path.isRegularFile
 import kotlin.io.path.name
 
 object WdioConfigDiscovery {
@@ -20,6 +22,16 @@ object WdioConfigDiscovery {
         return out.sortedBy { it.toString() }
     }
 
+    fun detectFramework(configFile: Path): Framework? {
+        if (!configFile.isRegularFile()) return null
+        val content = try {
+            Files.readString(configFile)
+        } catch (_: Exception) {
+            return null
+        }
+        return parseFrameworkFromConfigSource(content)
+    }
+
     private fun walk(dir: Path, depth: Int, out: MutableList<Path>) {
         if (depth >= MAX_DEPTH) return
         Files.list(dir).use { stream ->
@@ -32,4 +44,11 @@ object WdioConfigDiscovery {
             }
         }
     }
+}
+
+internal fun parseFrameworkFromConfigSource(content: String): Framework? {
+    val regex = Regex("""framework\s*:\s*['"`]([^'"`]+)['"`]""")
+    val match = regex.find(content) ?: return null
+    val name = match.groupValues[1].trim().lowercase()
+    return Framework.entries.firstOrNull { it.cliName == name }
 }

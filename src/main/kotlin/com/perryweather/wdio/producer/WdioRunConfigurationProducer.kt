@@ -11,6 +11,7 @@ import com.intellij.javascript.testing.JsTestRunConfigurationProducer
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiUtilCore
 import com.jetbrains.nodejs.mocha.execution.MochaRunConfiguration
@@ -55,8 +56,12 @@ class WdioRunConfigurationProducer : JsTestRunConfigurationProducer<WdioRunConfi
         }
 
         if (settings.wdioConfigFilePath.isBlank()) {
-            discoverFirstConfig(settings.workingDir)?.let {
-                settings = settings.copy(wdioConfigFilePath = FileUtil.toSystemDependentName(it))
+            discoverFirstConfig(settings.workingDir)?.let { discoveredPath ->
+                val detected = WdioConfigDiscovery.detectFramework(discoveredPath)
+                settings = settings.copy(
+                    wdioConfigFilePath = FileUtil.toSystemDependentName(discoveredPath.toString()),
+                    framework = detected ?: settings.framework,
+                )
             }
         }
 
@@ -101,11 +106,22 @@ class WdioRunConfigurationProducer : JsTestRunConfigurationProducer<WdioRunConfi
         WdioFrameworkAdapter.forFramework(configuration.runSettings.framework) ?: MochaAdapter
 
     private fun isActiveFor(element: PsiElement, context: ConfigurationContext): Boolean {
-        if (PsiUtilCore.getVirtualFile(element) == null) return false
-        return isTestRunnerPackageAvailableFor(element, context)
+        val file = PsiUtilCore.getVirtualFile(element) ?: return false
+        if (isTestRunnerPackageAvailableFor(element, context)) return true
+        return hasWdioCliInAncestorNodeModules(file)
     }
 
-    private fun discoverFirstConfig(workingDir: String): String? {
+    private fun hasWdioCliInAncestorNodeModules(file: VirtualFile): Boolean {
+        var dir: VirtualFile? = if (file.isDirectory) file else file.parent
+        while (dir != null) {
+            val pkg = dir.findFileByRelativePath("node_modules/@wdio/cli/package.json")
+            if (pkg != null && pkg.exists() && !pkg.isDirectory) return true
+            dir = dir.parent
+        }
+        return false
+    }
+
+    private fun discoverFirstConfig(workingDir: String): Path? {
         if (workingDir.isBlank()) return null
         val root = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(workingDir))
             ?: return null
@@ -114,6 +130,6 @@ class WdioRunConfigurationProducer : JsTestRunConfigurationProducer<WdioRunConfi
         } catch (_: UnsupportedOperationException) {
             return null
         }
-        return WdioConfigDiscovery.discover(rootPath).firstOrNull()?.toString()
+        return WdioConfigDiscovery.discover(rootPath).firstOrNull()
     }
 }

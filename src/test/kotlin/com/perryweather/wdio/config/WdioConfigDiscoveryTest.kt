@@ -3,7 +3,9 @@
 
 package com.perryweather.wdio.config
 
+import com.perryweather.wdio.framework.Framework
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -11,6 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
+import kotlin.io.path.writeText
 
 class WdioConfigDiscoveryTest {
 
@@ -91,6 +94,55 @@ class WdioConfigDiscoveryTest {
     fun `regular file as root returns empty list`(@TempDir root: Path) {
         val file = root.resolve("a-file.txt").also { it.createFile() }
         assertEquals(emptyList<Path>(), WdioConfigDiscovery.discover(file))
+    }
+
+    @Test
+    fun `framework detected from single-quoted mocha config`() {
+        val src = "exports.config = { framework: 'mocha', specs: [] };"
+        assertEquals(Framework.MOCHA, parseFrameworkFromConfigSource(src))
+    }
+
+    @Test
+    fun `framework detected from double-quoted cucumber config`() {
+        val src = """export const config = { framework: "cucumber" };"""
+        assertEquals(Framework.CUCUMBER, parseFrameworkFromConfigSource(src))
+    }
+
+    @Test
+    fun `framework detected when surrounded by other config keys`() {
+        val src = """
+            export const config = {
+                runner: 'local',
+                framework: 'jasmine',
+                reporters: ['spec'],
+            };
+        """.trimIndent()
+        assertEquals(Framework.JASMINE, parseFrameworkFromConfigSource(src))
+    }
+
+    @Test
+    fun `framework absent returns null`() {
+        val src = "exports.config = { runner: 'local' };"
+        assertNull(parseFrameworkFromConfigSource(src))
+    }
+
+    @Test
+    fun `unknown framework value returns null`() {
+        val src = "exports.config = { framework: 'made-up-runner' };"
+        assertNull(parseFrameworkFromConfigSource(src))
+    }
+
+    @Test
+    fun `detectFramework reads file and returns parsed framework`(@TempDir root: Path) {
+        val configFile = root.resolve("wdio.conf.js").apply {
+            writeText("exports.config = { framework: 'mocha' };")
+        }
+        assertEquals(Framework.MOCHA, WdioConfigDiscovery.detectFramework(configFile))
+    }
+
+    @Test
+    fun `detectFramework on missing file returns null`(@TempDir root: Path) {
+        assertNull(WdioConfigDiscovery.detectFramework(root.resolve("does-not-exist.js")))
     }
 
     @Test
