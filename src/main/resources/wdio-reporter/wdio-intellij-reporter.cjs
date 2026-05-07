@@ -69,6 +69,7 @@ class WdioIntellijReporter extends WDIOReporter {
         this._nextNodeId = 1;
         this._nodeIds = new Map();        // uid -> nodeId
         this._suiteStack = [];            // [{uid, nodeId}] currently open suites in nesting order
+        this._bufferedStarts = new Map(); // uid -> testStarted attrs (flushed on pass/fail, dropped on skip)
     }
 
     nodeIdFor(uid) {
@@ -110,18 +111,30 @@ class WdioIntellijReporter extends WDIOReporter {
 
     onTestStart(test) {
         if (!test || !test.uid) return;
-        const nodeId = this.nodeIdFor(test.uid);
-        emit(buildMessage('testStarted', {
-            nodeId,
+        // Buffer the testStarted message. Some frameworks (notably @wdio/jasmine-framework)
+        // fire onTestStart for grep-filtered tests too, then immediately fire onTestSkip;
+        // emitting eagerly would clutter the SMTRunner tree with "pending" rows for tests
+        // the user never asked to run. The buffered message is flushed on pass/fail and
+        // discarded on skip.
+        this._bufferedStarts.set(test.uid, {
+            nodeId: this.nodeIdFor(test.uid),
             parentNodeId: this.currentParentNodeId(),
             name: test.title || '',
             running: 'true',
             locationHint: this.locationHint(test),
-        }));
+        });
+    }
+
+    flushBufferedStart(uid) {
+        const attrs = this._bufferedStarts.get(uid);
+        if (!attrs) return;
+        emit(buildMessage('testStarted', attrs));
+        this._bufferedStarts.delete(uid);
     }
 
     onTestPass(test) {
         if (!test || !test.uid) return;
+        this.flushBufferedStart(test.uid);
         emit(buildMessage('testFinished', {
             nodeId: this.nodeIdFor(test.uid),
             duration: typeof test._duration === 'number' ? test._duration : undefined,
@@ -130,6 +143,7 @@ class WdioIntellijReporter extends WDIOReporter {
 
     onTestFail(test) {
         if (!test || !test.uid) return;
+        this.flushBufferedStart(test.uid);
         const error = (test.errors && test.errors[0]) || test.error || {};
         emit(buildMessage('testFailed', {
             nodeId: this.nodeIdFor(test.uid),
@@ -141,15 +155,9 @@ class WdioIntellijReporter extends WDIOReporter {
 
     onTestSkip(test) {
         if (!test || !test.uid) return;
-        // Only report tests that already started (i.e. truly pending mid-run, like xit/xdescribe).
-        // Tests skipped because they didn't match a grep filter never fire onTestStart, so they
-        // are absent from _nodeIds; suppressing them here keeps the tree focused on the tests
-        // the user actually wanted to run.
-        if (!this._nodeIds.has(test.uid)) return;
-        emit(buildMessage('testIgnored', {
-            nodeId: this.nodeIdFor(test.uid),
-            message: `Pending test '${test.title || ''}'`,
-        }));
+        // Drop the buffered testStarted so the test doesn't appear in the tree at all.
+        // This covers grep-filtered specs as well as xit/xdescribe pending tests.
+        this._bufferedStarts.delete(test.uid);
     }
 
     onSuiteEnd(suite) {
