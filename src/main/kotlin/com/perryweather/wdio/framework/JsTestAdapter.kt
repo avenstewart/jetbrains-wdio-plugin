@@ -4,6 +4,8 @@
 package com.perryweather.wdio.framework
 
 import com.intellij.javascript.testFramework.JsTestElementPath
+import com.intellij.javascript.testFramework.interfaces.mochaTdd.MochaTddFileStructureBuilder
+import com.intellij.javascript.testFramework.jasmine.JasmineFileStructureBuilder
 import com.intellij.lang.javascript.psi.JSFile
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
@@ -11,9 +13,18 @@ import com.intellij.psi.PsiFileSystemItem
 import com.intellij.psi.util.PsiUtilCore
 
 abstract class JsTestAdapter : WdioFrameworkAdapter {
-    protected abstract fun findTestPath(jsFile: JSFile, range: TextRange): JsTestElementPath?
     protected abstract val grepFlag: String
     protected abstract val timeoutFlag: String
+
+    protected open fun findTestPath(jsFile: JSFile, range: TextRange): JsTestElementPath? {
+        JasmineFileStructureBuilder.getInstance()
+            .fetchCachedTestFileStructure(jsFile)
+            .findTestElementPath(range)
+            ?.let { return it }
+        return MochaTddFileStructureBuilder.getInstance()
+            .fetchCachedTestFileStructure(jsFile)
+            .findTestElementPath(range)
+    }
 
     override fun matches(element: PsiElement): Boolean {
         if (element is PsiFileSystemItem) return false
