@@ -16,11 +16,13 @@ import com.intellij.javascript.JSRunProfileWithCompileBeforeLaunchOption
 import com.intellij.javascript.nodejs.debug.NodeDebugRunConfiguration
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreter
 import com.intellij.javascript.nodejs.util.NodePackage
+import com.intellij.javascript.testFramework.PreferableRunConfiguration
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiElement
 import com.perryweather.wdio.config.WDIO_CLI_PACKAGE_DESCRIPTOR
 import com.perryweather.wdio.config.WdioRunSettings
 import com.perryweather.wdio.config.WdioRunSettingsSerializer
@@ -36,6 +38,7 @@ class WdioRunConfiguration(
 ) : LocatableConfigurationBase<WdioRunConfiguration>(project, factory, name),
     JSRunProfileWithCompileBeforeLaunchOption,
     NodeDebugRunConfiguration,
+    PreferableRunConfiguration,
     SMRunnerConsolePropertiesProvider {
 
     var runSettings: WdioRunSettings = WdioRunSettings()
@@ -87,6 +90,9 @@ class WdioRunConfiguration(
         if (path.isNotBlank()) return path.substringAfterLast('/')
         return TestRunnerBundle.message("all.tests.scope.presentable.text")
     }
+
+    override fun isPreferredOver(other: com.intellij.execution.configurations.RunConfiguration, sourceElement: PsiElement): Boolean =
+        runSettings.wdioPackage?.isValid(null, null) == true
 
     override fun onNewConfigurationCreated() {
         if (runSettings.workingDir.isBlank()) {

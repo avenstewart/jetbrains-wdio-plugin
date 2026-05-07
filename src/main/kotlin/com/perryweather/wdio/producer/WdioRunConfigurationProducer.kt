@@ -4,13 +4,16 @@
 package com.perryweather.wdio.producer
 
 import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.ConfigurationFromContext
 import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.javascript.testFramework.PreferableRunConfiguration
 import com.intellij.javascript.testing.JsTestRunConfigurationProducer
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiUtilCore
+import com.jetbrains.nodejs.mocha.execution.MochaRunConfiguration
 import com.perryweather.wdio.config.WDIO_CLI_PACKAGE_DESCRIPTOR
 import com.perryweather.wdio.config.WdioConfigDiscovery
 import com.perryweather.wdio.framework.MochaAdapter
@@ -57,6 +60,17 @@ class WdioRunConfigurationProducer : JsTestRunConfigurationProducer<WdioRunConfi
             }
         }
 
+        if (settings.wdioPackage == null) {
+            val pkg = WDIO_CLI_PACKAGE_DESCRIPTOR.findFirstDirectDependencyPackage(
+                configuration.project,
+                settings.interpreterRef.resolve(configuration.project),
+                virtualFile,
+            )
+            if (!pkg.isEmptyPath) {
+                settings = settings.copy(wdioPackage = pkg)
+            }
+        }
+
         configuration.runSettings = settings
         sourceElement.set(element)
         configuration.setGeneratedName()
@@ -73,6 +87,14 @@ class WdioRunConfigurationProducer : JsTestRunConfigurationProducer<WdioRunConfi
         val settings = configuration.runSettings
         return FileUtil.toSystemDependentName(target.filePath) == settings.testFilePath &&
             target.filter == settings.testFilter
+    }
+
+    override fun isPreferredConfiguration(self: ConfigurationFromContext, other: ConfigurationFromContext?): Boolean {
+        if (other == null) return true
+        val otherConfig = other.configuration
+        if (otherConfig is MochaRunConfiguration) return true
+        val preferable = otherConfig as? PreferableRunConfiguration ?: return true
+        return !preferable.isPreferredOver(self.configuration, self.sourceElement)
     }
 
     private fun adapterFor(configuration: WdioRunConfiguration): WdioFrameworkAdapter =
