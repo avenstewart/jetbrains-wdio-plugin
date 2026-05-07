@@ -6,6 +6,7 @@ package com.perryweather.wdio.console
 import com.intellij.execution.Executor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.testframework.actions.AbstractRerunFailedTestsAction
+import com.intellij.execution.testframework.sm.runner.OutputToGeneralTestEventsConverter
 import com.intellij.execution.testframework.sm.runner.SMTestLocator
 import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView
 import com.intellij.execution.ui.ConsoleView
@@ -44,6 +45,11 @@ class WdioConsoleProperties(
     }
 
     override fun getTestLocator(): SMTestLocator = locator
+
+    override fun createTestEventsConverter(
+        testFrameworkName: String,
+        consoleProperties: com.intellij.execution.testframework.TestConsoleProperties,
+    ): OutputToGeneralTestEventsConverter = WdioOutputConverter(testFrameworkName, consoleProperties)
 
     override fun createRerunFailedTestsAction(consoleView: ConsoleView?): AbstractRerunFailedTestsAction =
         WdioRerunFailedTestAction(consoleView as SMTRunnerConsoleView, this)
