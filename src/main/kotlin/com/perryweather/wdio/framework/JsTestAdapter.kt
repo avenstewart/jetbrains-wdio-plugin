@@ -57,14 +57,3 @@ internal fun buildGrepPattern(suiteNames: List<String>, testName: String?): Stri
     val joined = parts.joinToString(" ")
     return if (testName != null) "^$joined$" else "^$joined "
 }
-
-private fun escapeRegex(s: String): String = buildString(s.length) {
-    for (c in s) {
-        when (c) {
-            '\\', '.', '+', '*', '?', '(', ')', '{', '}', '[', ']', '^', '$', '|' -> {
-                append('\\'); append(c)
-            }
-            else -> append(c)
-        }
-    }
-}
