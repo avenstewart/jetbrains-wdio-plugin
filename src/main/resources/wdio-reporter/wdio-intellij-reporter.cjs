@@ -70,6 +70,8 @@ class WdioIntellijReporter extends WDIOReporter {
         this._nodeIds = new Map();        // uid -> nodeId
         this._suiteStack = [];            // [{uid, nodeId}] currently open suites in nesting order
         this._bufferedStarts = new Map(); // uid -> testStarted attrs (flushed on pass/fail, dropped on skip)
+        this._bufferedSuiteStarts = new Map(); // uid -> testSuiteStarted attrs (flushed when first child runs)
+        this._suitesEmitted = new Set();  // suite uids that already emitted testSuiteStarted
     }
 
     nodeIdFor(uid) {
@@ -99,14 +101,28 @@ class WdioIntellijReporter extends WDIOReporter {
     onSuiteStart(suite) {
         if (!suite || !suite.uid) return;
         const nodeId = this.nodeIdFor(suite.uid);
-        emit(buildMessage('testSuiteStarted', {
+        // Defer testSuiteStarted in the same way we defer testStarted: only emit once
+        // we know a child actually ran. Empty suites (e.g. parents whose only tests were
+        // grep-filtered) shouldn't appear in the tree at all.
+        this._bufferedSuiteStarts.set(suite.uid, {
             nodeId,
             parentNodeId: this.currentParentNodeId(),
             name: suite.title || '',
             running: 'true',
             locationHint: this.locationHint(suite),
-        }));
+        });
         this._suiteStack.push({ uid: suite.uid, nodeId });
+    }
+
+    flushSuiteAncestors() {
+        for (const entry of this._suiteStack) {
+            if (this._suitesEmitted.has(entry.uid)) continue;
+            const attrs = this._bufferedSuiteStarts.get(entry.uid);
+            if (!attrs) continue;
+            emit(buildMessage('testSuiteStarted', attrs));
+            this._suitesEmitted.add(entry.uid);
+            this._bufferedSuiteStarts.delete(entry.uid);
+        }
     }
 
     onTestStart(test) {
@@ -128,6 +144,7 @@ class WdioIntellijReporter extends WDIOReporter {
     flushBufferedStart(uid) {
         const attrs = this._bufferedStarts.get(uid);
         if (!attrs) return;
+        this.flushSuiteAncestors();
         emit(buildMessage('testStarted', attrs));
         this._bufferedStarts.delete(uid);
     }
@@ -162,7 +179,12 @@ class WdioIntellijReporter extends WDIOReporter {
 
     onSuiteEnd(suite) {
         if (!suite || !suite.uid) return;
-        emit(buildMessage('testSuiteFinished', { nodeId: this.nodeIdFor(suite.uid) }));
+        if (this._suitesEmitted.has(suite.uid)) {
+            emit(buildMessage('testSuiteFinished', { nodeId: this.nodeIdFor(suite.uid) }));
+            this._suitesEmitted.delete(suite.uid);
+        }
+        // If the suite never ran any visible children, drop the buffered start without emitting.
+        this._bufferedSuiteStarts.delete(suite.uid);
         const top = this._suiteStack[this._suiteStack.length - 1];
         if (top && top.uid === suite.uid) this._suiteStack.pop();
     }
@@ -170,7 +192,11 @@ class WdioIntellijReporter extends WDIOReporter {
     onRunnerEnd() {
         while (this._suiteStack.length > 0) {
             const popped = this._suiteStack.pop();
-            emit(buildMessage('testSuiteFinished', { nodeId: popped.nodeId }));
+            if (this._suitesEmitted.has(popped.uid)) {
+                emit(buildMessage('testSuiteFinished', { nodeId: popped.nodeId }));
+                this._suitesEmitted.delete(popped.uid);
+            }
+            this._bufferedSuiteStarts.delete(popped.uid);
         }
         emit('##teamcity[testingFinished]');
     }
