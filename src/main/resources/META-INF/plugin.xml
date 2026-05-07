@@ -9,11 +9,14 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>JavaScript</depends>
     <depends>NodeJS</depends>
+    <depends>gherkin</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <configurationType implementation="com.perryweather.wdio.runner.WdioConfigurationType"/>
         <programRunner implementation="com.perryweather.wdio.runner.WdioRunProgramRunner"/>
         <runConfigurationProducer implementation="com.perryweather.wdio.producer.WdioRunConfigurationProducer"/>
+        <runLineMarkerContributor language="Gherkin"
+                                  implementationClass="com.perryweather.wdio.producer.WdioGherkinLineMarkerContributor"/>
     </extensions>
 
 </idea-plugin>

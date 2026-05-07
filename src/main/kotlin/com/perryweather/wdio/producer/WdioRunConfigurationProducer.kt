@@ -18,6 +18,8 @@ import com.intellij.psi.util.PsiUtilCore
 import com.jetbrains.nodejs.mocha.execution.MochaRunConfiguration
 import com.perryweather.wdio.config.WDIO_CLI_PACKAGE_DESCRIPTOR
 import com.perryweather.wdio.config.WdioConfigDiscovery
+import com.perryweather.wdio.framework.CucumberAdapter
+import com.perryweather.wdio.framework.Framework
 import com.perryweather.wdio.framework.MochaAdapter
 import com.perryweather.wdio.framework.WdioFrameworkAdapter
 import com.perryweather.wdio.framework.WdioTestFrameworkDetector
@@ -44,13 +46,14 @@ class WdioRunConfigurationProducer : JsPackageDependentTestRunConfigurationProdu
         val element = context.psiLocation ?: return false
         if (!isActiveFor(element, context)) return false
 
-        val adapter = adapterFor(configuration)
+        val adapter = adapterFor(configuration, element)
         val testTarget = adapter.extractTestTarget(element) ?: return false
         val virtualFile = PsiUtilCore.getVirtualFile(element) ?: return false
 
         var settings = configuration.runSettings.copy(
             testFilePath = FileUtil.toSystemDependentName(testTarget.filePath),
             testFilter = testTarget.filter,
+            framework = adapter.framework,
         )
 
         if (settings.workingDir.isBlank()) {
@@ -93,7 +96,7 @@ class WdioRunConfigurationProducer : JsPackageDependentTestRunConfigurationProdu
         context: ConfigurationContext,
     ): Boolean {
         val element = context.psiLocation ?: return false
-        val adapter = adapterFor(configuration)
+        val adapter = adapterFor(configuration, element)
         val target = adapter.extractTestTarget(element) ?: return false
         val settings = configuration.runSettings
         return FileUtil.toSystemDependentName(target.filePath) == settings.testFilePath &&
@@ -108,8 +111,14 @@ class WdioRunConfigurationProducer : JsPackageDependentTestRunConfigurationProdu
         return !preferable.isPreferredOver(self.configuration, self.sourceElement)
     }
 
-    private fun adapterFor(configuration: WdioRunConfiguration): WdioFrameworkAdapter =
-        WdioFrameworkAdapter.forFramework(configuration.runSettings.framework) ?: MochaAdapter
+    private fun adapterFor(configuration: WdioRunConfiguration, element: PsiElement): WdioFrameworkAdapter {
+        // Gherkin clicks always go to the Cucumber adapter regardless of the configured
+        // framework, so we don't try to send a .feature file through Mocha or Jasmine.
+        if (CucumberAdapter.matches(element)) return CucumberAdapter
+        return WdioFrameworkAdapter.forFramework(configuration.runSettings.framework)
+            ?.takeIf { it.framework != Framework.CUCUMBER }
+            ?: MochaAdapter
+    }
 
     private fun isActiveFor(element: PsiElement, context: ConfigurationContext): Boolean {
         val file = PsiUtilCore.getVirtualFile(element) ?: return false
