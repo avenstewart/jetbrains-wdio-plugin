@@ -14,7 +14,7 @@ const val WDIO_CLI_PACKAGE_NAME: String = "@wdio/cli"
 val WDIO_CLI_PACKAGE_DESCRIPTOR: NodePackageDescriptor = NodePackageDescriptor(WDIO_CLI_PACKAGE_NAME)
 
 data class WdioRunSettings(
-    val interpreterRef: NodeJsInterpreterRef = NodeJsInterpreterRef.create(""),
+    val interpreterRef: NodeJsInterpreterRef = NodeJsInterpreterRef.create("project"),
     val nodeOptions: String = "",
     val wdioPackage: NodePackage? = null,
     val workingDir: String = "",

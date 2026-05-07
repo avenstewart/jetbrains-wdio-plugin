@@ -34,7 +34,8 @@ private const val LEGACY_NAME_CHILD = "name"
 object WdioRunSettingsSerializer {
 
     fun readFromXml(parent: Element): WdioRunSettings {
-        val interpreterRef = NodeJsInterpreterRef.create(readTag(parent, NODE_INTERPRETER).orEmpty())
+        val interpreterRefName = readTag(parent, NODE_INTERPRETER)?.takeIf { it.isNotEmpty() } ?: "project"
+        val interpreterRef = NodeJsInterpreterRef.create(interpreterRefName)
         val nodeOptions = readTag(parent, NODE_OPTIONS).orEmpty()
         val wdioPackage = readTag(parent, WDIO_PACKAGE)?.let { WDIO_CLI_PACKAGE_DESCRIPTOR.createPackage(it) }
         val workingDir = readTag(parent, WORKING_DIRECTORY)?.let(FileUtil::toSystemDependentName).orEmpty()
