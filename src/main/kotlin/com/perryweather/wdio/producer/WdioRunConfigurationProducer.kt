@@ -7,7 +7,8 @@ import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.actions.ConfigurationFromContext
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.javascript.testFramework.PreferableRunConfiguration
-import com.intellij.javascript.testing.JsTestRunConfigurationProducer
+import com.intellij.javascript.testing.JsPackageDependentTestRunConfigurationProducer
+import com.intellij.javascript.testing.detection.JsTestFrameworkDetector
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -19,16 +20,21 @@ import com.perryweather.wdio.config.WDIO_CLI_PACKAGE_DESCRIPTOR
 import com.perryweather.wdio.config.WdioConfigDiscovery
 import com.perryweather.wdio.framework.MochaAdapter
 import com.perryweather.wdio.framework.WdioFrameworkAdapter
+import com.perryweather.wdio.framework.WdioTestFrameworkDetector
 import com.perryweather.wdio.runner.WdioConfigurationType
 import com.perryweather.wdio.runner.WdioRunConfiguration
 import java.nio.file.Path
 
-class WdioRunConfigurationProducer : JsTestRunConfigurationProducer<WdioRunConfiguration>(
+class WdioRunConfigurationProducer : JsPackageDependentTestRunConfigurationProducer<WdioRunConfiguration>(
     WDIO_CLI_PACKAGE_DESCRIPTOR,
     emptyList(),
 ) {
+    private val frameworkDetector = WdioTestFrameworkDetector()
+
     override fun getConfigurationFactory(): ConfigurationFactory =
         WdioConfigurationType.getInstance().configurationFactories.first()
+
+    override fun getTestFrameworkDetector(): JsTestFrameworkDetector = frameworkDetector
 
     override fun setupConfigurationFromCompatibleContext(
         configuration: WdioRunConfiguration,
@@ -107,7 +113,7 @@ class WdioRunConfigurationProducer : JsTestRunConfigurationProducer<WdioRunConfi
 
     private fun isActiveFor(element: PsiElement, context: ConfigurationContext): Boolean {
         val file = PsiUtilCore.getVirtualFile(element) ?: return false
-        if (isTestRunnerPackageAvailableFor(element, context)) return true
+        if (isTestRunnerAvailableFor(element, context)) return true
         return hasWdioCliInAncestorNodeModules(file)
     }
 
