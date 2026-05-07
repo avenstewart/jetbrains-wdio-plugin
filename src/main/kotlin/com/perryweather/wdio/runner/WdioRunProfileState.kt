@@ -74,6 +74,7 @@ class WdioRunProfileState(
             wdioCliMainJs = wdioCliMainJs,
             debug = debug,
             preNodeFlags = preNodeFlags,
+            intellijReporterPath = WdioReporterExtractor.extractedReporterPath().toString(),
         )
     }
 

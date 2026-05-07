@@ -132,6 +132,33 @@ class WdioCommandLineBuilderTest {
     }
 
     @Test
+    fun `intellij reporter path is appended as an additive --reporters flag`() {
+        val settings = WdioRunSettings(
+            wdioConfigFilePath = "wdio.conf.js",
+            testFilePath = "/abs/test/foo.spec.js",
+        )
+        val cl = WdioCommandLineBuilder.build(
+            settings,
+            MochaAdapter,
+            wdioMainJs,
+            debug = false,
+            intellijReporterPath = "/cache/wdio-intellij-reporter.cjs",
+        )
+        val params = cl.parametersList.parameters
+        val reporterIdx = params.indexOf("--reporters")
+        assertTrue(reporterIdx > 0)
+        assertEquals("/cache/wdio-intellij-reporter.cjs", params[reporterIdx + 1])
+        assertTrue(params.indexOf("--spec") > reporterIdx)
+    }
+
+    @Test
+    fun `intellij reporter argv omitted when path is null`() {
+        val settings = WdioRunSettings(wdioConfigFilePath = "wdio.conf.js")
+        val cl = WdioCommandLineBuilder.build(settings, MochaAdapter, wdioMainJs, debug = false)
+        assertTrue("--reporters" !in cl.parametersList.parameters)
+    }
+
+    @Test
     fun `blank wdio config file path is omitted from argv`() {
         val settings = WdioRunSettings(wdioConfigFilePath = "")
         val cl = WdioCommandLineBuilder.build(settings, MochaAdapter, wdioMainJs, debug = false)

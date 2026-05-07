@@ -17,8 +17,9 @@ object WdioCommandLineBuilder {
         wdioCliMainJs: String,
         debug: Boolean,
         preNodeFlags: List<String> = emptyList(),
+        intellijReporterPath: String? = null,
     ): GeneralCommandLine = GeneralCommandLine().also {
-        apply(it, settings, adapter, wdioCliMainJs, debug, preNodeFlags)
+        apply(it, settings, adapter, wdioCliMainJs, debug, preNodeFlags, intellijReporterPath)
     }
 
     fun apply(
@@ -28,6 +29,7 @@ object WdioCommandLineBuilder {
         wdioCliMainJs: String,
         debug: Boolean,
         preNodeFlags: List<String> = emptyList(),
+        intellijReporterPath: String? = null,
     ) {
         commandLine.charset = StandardCharsets.UTF_8
         if (settings.workingDir.isNotBlank()) {
@@ -49,6 +51,10 @@ object WdioCommandLineBuilder {
         commandLine.parametersList.add("--framework")
         commandLine.parametersList.add(adapter.framework.cliName)
         commandLine.parametersList.addAll(adapter.argvFor(settings.testFilter, debug))
+        if (intellijReporterPath != null) {
+            commandLine.parametersList.add("--reporters")
+            commandLine.parametersList.add(intellijReporterPath)
+        }
         if (settings.testFilePath.isNotBlank()) {
             commandLine.parametersList.add("--spec")
             commandLine.parametersList.add(settings.testFilePath)
