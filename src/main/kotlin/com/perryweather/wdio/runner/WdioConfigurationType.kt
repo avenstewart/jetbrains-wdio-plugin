@@ -5,6 +5,7 @@ package com.perryweather.wdio.runner
 
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.ConfigurationType
+import com.intellij.execution.configurations.ConfigurationTypeUtil
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
@@ -23,6 +24,11 @@ class WdioConfigurationType : ConfigurationType {
     override fun getId(): String = "com.perryweather.wdio.WdioConfigurationType"
 
     override fun getConfigurationFactories(): Array<ConfigurationFactory> = arrayOf(factory)
+
+    companion object {
+        fun getInstance(): WdioConfigurationType =
+            ConfigurationTypeUtil.findConfigurationType(WdioConfigurationType::class.java)
+    }
 }
 
 class WdioConfigurationFactory(type: WdioConfigurationType) : ConfigurationFactory(type) {
