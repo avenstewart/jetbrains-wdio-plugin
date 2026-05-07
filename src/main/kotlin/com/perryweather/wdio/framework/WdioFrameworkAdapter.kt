@@ -12,10 +12,10 @@ sealed interface WdioFrameworkAdapter {
 
     fun extractTestTarget(element: PsiElement): TestTarget?
 
-    fun argvFor(filter: TestFilter, debug: Boolean): List<String>
+    fun argvFor(filter: TestFilter, testFilePath: String, debug: Boolean): List<String>
 
     companion object {
-        val ALL: List<WdioFrameworkAdapter> = listOf(MochaAdapter, JasmineAdapter)
+        val ALL: List<WdioFrameworkAdapter> = listOf(MochaAdapter, JasmineAdapter, CucumberAdapter)
 
         fun forFramework(framework: Framework): WdioFrameworkAdapter? =
             ALL.firstOrNull { it.framework == framework }

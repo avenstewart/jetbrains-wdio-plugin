@@ -50,7 +50,7 @@ object WdioCommandLineBuilder {
         }
         commandLine.parametersList.add("--framework")
         commandLine.parametersList.add(adapter.framework.cliName)
-        commandLine.parametersList.addAll(adapter.argvFor(settings.testFilter, debug))
+        commandLine.parametersList.addAll(adapter.argvFor(settings.testFilter, settings.testFilePath, debug))
         if (intellijReporterPath != null) {
             commandLine.parametersList.add("--reporters")
             commandLine.parametersList.add(intellijReporterPath)

@@ -43,7 +43,7 @@ abstract class JsTestAdapter : WdioFrameworkAdapter {
         return TestTarget(virtualFile.path, filter)
     }
 
-    override fun argvFor(filter: TestFilter, debug: Boolean): List<String> = buildList {
+    override fun argvFor(filter: TestFilter, testFilePath: String, debug: Boolean): List<String> = buildList {
         if (filter is TestFilter.Grep) {
             add(grepFlag)
             add(filter.pattern)
