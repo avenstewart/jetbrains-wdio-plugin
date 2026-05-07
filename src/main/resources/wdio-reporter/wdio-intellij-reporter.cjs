@@ -141,6 +141,11 @@ class WdioIntellijReporter extends WDIOReporter {
 
     onTestSkip(test) {
         if (!test || !test.uid) return;
+        // Only report tests that already started (i.e. truly pending mid-run, like xit/xdescribe).
+        // Tests skipped because they didn't match a grep filter never fire onTestStart, so they
+        // are absent from _nodeIds; suppressing them here keeps the tree focused on the tests
+        // the user actually wanted to run.
+        if (!this._nodeIds.has(test.uid)) return;
         emit(buildMessage('testIgnored', {
             nodeId: this.nodeIdFor(test.uid),
             message: `Pending test '${test.title || ''}'`,
