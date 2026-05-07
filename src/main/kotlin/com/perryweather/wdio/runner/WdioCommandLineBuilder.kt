@@ -17,31 +17,41 @@ object WdioCommandLineBuilder {
         wdioCliMainJs: String,
         debug: Boolean,
         preNodeFlags: List<String> = emptyList(),
-    ): GeneralCommandLine {
-        val commandLine = GeneralCommandLine()
+    ): GeneralCommandLine = GeneralCommandLine().also {
+        apply(it, settings, adapter, wdioCliMainJs, debug, preNodeFlags)
+    }
+
+    fun apply(
+        commandLine: GeneralCommandLine,
+        settings: WdioRunSettings,
+        adapter: WdioFrameworkAdapter,
+        wdioCliMainJs: String,
+        debug: Boolean,
+        preNodeFlags: List<String> = emptyList(),
+    ) {
         commandLine.charset = StandardCharsets.UTF_8
         if (settings.workingDir.isNotBlank()) {
             commandLine.withWorkDirectory(settings.workingDir)
         }
         settings.envData.configureCommandLine(commandLine, true)
 
-        commandLine.addParameters(preNodeFlags)
+        commandLine.parametersList.clearAll()
+        commandLine.parametersList.addAll(preNodeFlags)
         if (settings.nodeOptions.isNotBlank()) {
-            commandLine.addParameters(ParametersListUtil.parse(settings.nodeOptions.trim()))
+            commandLine.parametersList.addAll(ParametersListUtil.parse(settings.nodeOptions.trim()))
         }
-        commandLine.addParameter(wdioCliMainJs)
+        commandLine.parametersList.add(wdioCliMainJs)
 
-        commandLine.addParameter("run")
+        commandLine.parametersList.add("run")
         if (settings.wdioConfigFilePath.isNotBlank()) {
-            commandLine.addParameter(settings.wdioConfigFilePath)
+            commandLine.parametersList.add(settings.wdioConfigFilePath)
         }
-        commandLine.addParameter("--framework")
-        commandLine.addParameter(adapter.framework.cliName)
+        commandLine.parametersList.add("--framework")
+        commandLine.parametersList.add(adapter.framework.cliName)
         commandLine.parametersList.addAll(adapter.argvFor(settings.testFilter, debug))
         if (settings.testFilePath.isNotBlank()) {
-            commandLine.addParameter("--spec")
-            commandLine.addParameter(settings.testFilePath)
+            commandLine.parametersList.add("--spec")
+            commandLine.parametersList.add(settings.testFilePath)
         }
-        return commandLine
     }
 }
