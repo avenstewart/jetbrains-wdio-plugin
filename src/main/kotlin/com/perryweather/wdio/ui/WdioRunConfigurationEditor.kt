@@ -3,23 +3,27 @@
 
 package com.perryweather.wdio.ui
 
+import com.intellij.execution.configuration.EnvironmentVariablesData
 import com.intellij.execution.configuration.EnvironmentVariablesTextFieldWithBrowseButton
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterField
 import com.intellij.javascript.nodejs.util.NodePackageField
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
-import com.perryweather.wdio.config.WDIO_CLI_PACKAGE_DESCRIPTOR
 import com.perryweather.wdio.config.WDIO_CLI_PACKAGE_NAME
+import com.perryweather.wdio.config.WdioConfigDiscovery
 import com.perryweather.wdio.framework.Framework
 import com.perryweather.wdio.runner.WdioRunConfiguration
 import java.awt.Component
+import java.nio.file.Path
 import javax.swing.DefaultListCellRenderer
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JList
+import kotlin.io.path.isDirectory
 
 class WdioRunConfigurationEditor(project: Project) : SettingsEditor<WdioRunConfiguration>() {
 
@@ -28,7 +32,8 @@ class WdioRunConfigurationEditor(project: Project) : SettingsEditor<WdioRunConfi
     private val wdioPackageField = NodePackageField(interpreterField, WDIO_CLI_PACKAGE_NAME)
     private val workingDirField = JBTextField()
     private val envVarsField = EnvironmentVariablesTextFieldWithBrowseButton()
-    private val wdioConfigFileField = JBTextField()
+    private val testEnvField = JBTextField()
+    private val wdioConfigFileField = ComboBox<String>().apply { isEditable = true }
     private val testFilePathField = JBTextField()
     private val frameworkField = JComboBox(Framework.entries.toTypedArray()).apply {
         renderer = object : DefaultListCellRenderer() {
@@ -51,6 +56,7 @@ class WdioRunConfigurationEditor(project: Project) : SettingsEditor<WdioRunConfi
         .addLabeledComponent("Node options:", nodeOptionsField)
         .addLabeledComponent("WebdriverIO package:", wdioPackageField)
         .addLabeledComponent("Working directory:", workingDirField)
+        .addLabeledComponent("TEST_ENV:", testEnvField)
         .addLabeledComponent("Environment variables:", envVarsField)
         .addLabeledComponent("WDIO config file:", wdioConfigFileField)
         .addLabeledComponent("Framework:", frameworkField)
@@ -66,7 +72,8 @@ class WdioRunConfigurationEditor(project: Project) : SettingsEditor<WdioRunConfi
         rs.wdioPackage?.let { wdioPackageField.selected = it }
         workingDirField.text = rs.workingDir
         envVarsField.data = rs.envData
-        wdioConfigFileField.text = rs.wdioConfigFilePath
+        testEnvField.text = rs.envData.envs["TEST_ENV"].orEmpty()
+        refreshConfigOptions(rs.workingDir, rs.wdioConfigFilePath)
         frameworkField.selectedItem = rs.framework
         testFilePathField.text = rs.testFilePath
     }
@@ -77,10 +84,32 @@ class WdioRunConfigurationEditor(project: Project) : SettingsEditor<WdioRunConfi
             nodeOptions = nodeOptionsField.text,
             wdioPackage = wdioPackageField.selected,
             workingDir = workingDirField.text,
-            envData = envVarsField.data,
-            wdioConfigFilePath = wdioConfigFileField.text,
+            envData = mergeEnvs(),
+            wdioConfigFilePath = (wdioConfigFileField.editor.item as? String).orEmpty(),
             framework = frameworkField.selectedItem as? Framework ?: Framework.MOCHA,
             testFilePath = testFilePathField.text,
         )
+    }
+
+    private fun mergeEnvs(): EnvironmentVariablesData {
+        val base = envVarsField.data
+        val testEnv = testEnvField.text
+        val envs = if (testEnv.isNotBlank()) base.envs + ("TEST_ENV" to testEnv) else base.envs
+        return EnvironmentVariablesData.create(envs, base.isPassParentEnvs)
+    }
+
+    private fun refreshConfigOptions(workingDir: String, currentValue: String) {
+        wdioConfigFileField.removeAllItems()
+        if (workingDir.isNotBlank()) {
+            runCatching {
+                val root = Path.of(workingDir)
+                if (root.isDirectory()) {
+                    WdioConfigDiscovery.discover(root).forEach {
+                        wdioConfigFileField.addItem(it.toString())
+                    }
+                }
+            }
+        }
+        wdioConfigFileField.selectedItem = currentValue
     }
 }
