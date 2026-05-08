@@ -9,12 +9,10 @@ sealed interface TestFilter {
     // Mocha / Jasmine: match test name(s) by regex via --{moch,jasmin}aOpts.grep.
     data class Grep(val pattern: String) : TestFilter
 
-    // Cucumber: target a specific scenario by line via --cucumberFeaturesWithLineNumbers.
-    data class CucumberLine(val line: Int) : TestFilter
-
     // Cucumber: tag expression via --cucumberOpts.tags (e.g. "@smoke and not @wip").
     data class CucumberTags(val expression: String) : TestFilter
 
-    // Cucumber: scenario name regex via --cucumberOpts.name.
+    // Cucumber: scenario name regex via --cucumberOpts.name. Used both for "run this scenario"
+    // (anchored ^name$) and free-form name filters.
     data class CucumberName(val pattern: String) : TestFilter
 }

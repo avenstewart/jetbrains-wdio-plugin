@@ -25,7 +25,6 @@ private const val TEST_FILTER = "test-filter"
 private const val FILTER_TYPE_ATTR = "type"
 private const val FILTER_PATTERN_ATTR = "pattern"
 private const val FILTER_EXPRESSION_ATTR = "expression"
-private const val FILTER_LINE_ATTR = "line"
 
 private const val LEGACY_TEST_NAMES = "test-names"
 private const val LEGACY_TEST_LINE_NUMBERS = "test-line-numbers"
@@ -88,9 +87,6 @@ object WdioRunSettingsSerializer {
         val element = parent.getChild(TEST_FILTER) ?: return null
         return when (element.getAttributeValue(FILTER_TYPE_ATTR)) {
             "grep" -> TestFilter.Grep(element.getAttributeValue(FILTER_PATTERN_ATTR).orEmpty())
-            "cucumber-line" -> element.getAttributeValue(FILTER_LINE_ATTR)?.toIntOrNull()
-                ?.let(TestFilter::CucumberLine)
-                ?: TestFilter.None
             "cucumber-tags" -> TestFilter.CucumberTags(element.getAttributeValue(FILTER_EXPRESSION_ATTR).orEmpty())
             "cucumber-name" -> TestFilter.CucumberName(element.getAttributeValue(FILTER_PATTERN_ATTR).orEmpty())
             "none" -> TestFilter.None
@@ -106,10 +102,6 @@ object WdioRunSettingsSerializer {
             is TestFilter.Grep -> {
                 element.setAttribute(FILTER_TYPE_ATTR, "grep")
                 element.setAttribute(FILTER_PATTERN_ATTR, filter.pattern)
-            }
-            is TestFilter.CucumberLine -> {
-                element.setAttribute(FILTER_TYPE_ATTR, "cucumber-line")
-                element.setAttribute(FILTER_LINE_ATTR, filter.line.toString())
             }
             is TestFilter.CucumberTags -> {
                 element.setAttribute(FILTER_TYPE_ATTR, "cucumber-tags")

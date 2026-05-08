@@ -44,16 +44,6 @@ class AdapterArgvTest {
     }
 
     @Test
-    fun `Cucumber line filter emits cucumberFeaturesWithLineNumbers with file colon line`() {
-        val args = CucumberAdapter.argvFor(
-            TestFilter.CucumberLine(42),
-            "/abs/features/checkout.feature",
-            debug = false,
-        )
-        assertEquals(listOf("--cucumberFeaturesWithLineNumbers", "/abs/features/checkout.feature:42"), args)
-    }
-
-    @Test
     fun `Cucumber tags filter emits cucumberOpts tags`() {
         val args = CucumberAdapter.argvFor(TestFilter.CucumberTags("@smoke and not @wip"), "", debug = false)
         assertEquals(listOf("--cucumberOpts.tags", "@smoke and not @wip"), args)
@@ -72,8 +62,8 @@ class AdapterArgvTest {
     }
 
     @Test
-    fun `Cucumber line filter omitted when test file path is blank`() {
-        val args = CucumberAdapter.argvFor(TestFilter.CucumberLine(42), "", debug = false)
-        assertEquals(emptyList<String>(), args)
+    fun `Cucumber name filter anchors the regex when targeting a single scenario`() {
+        val args = CucumberAdapter.argvFor(TestFilter.CucumberName("^a passing arithmetic check$"), "", debug = false)
+        assertEquals(listOf("--cucumberOpts.name", "^a passing arithmetic check$"), args)
     }
 }

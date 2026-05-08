@@ -3,8 +3,6 @@
 
 package com.perryweather.wdio.framework
 
-import com.intellij.openapi.editor.Document
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFileSystemItem
 import com.intellij.psi.util.PsiTreeUtil
@@ -40,8 +38,8 @@ object CucumberAdapter : WdioFrameworkAdapter {
             GherkinScenarioOutline::class.java,
         )
         if (scenario is GherkinStepsHolder) {
-            val line = lineNumberFor(scenario)
-            return TestTarget(virtualFile.path, TestFilter.CucumberLine(line))
+            val title = scenario.scenarioName.orEmpty()
+            return TestTarget(virtualFile.path, TestFilter.CucumberName("^${escapeRegex(title)}$"))
         }
 
         if (PsiTreeUtil.getParentOfType(element, GherkinFeature::class.java, false) != null ||
@@ -54,12 +52,6 @@ object CucumberAdapter : WdioFrameworkAdapter {
 
     override fun argvFor(filter: TestFilter, testFilePath: String, debug: Boolean): List<String> = buildList {
         when (filter) {
-            is TestFilter.CucumberLine -> {
-                if (testFilePath.isNotBlank()) {
-                    add("--cucumberFeaturesWithLineNumbers")
-                    add("$testFilePath:${filter.line}")
-                }
-            }
             is TestFilter.CucumberTags -> {
                 add("--cucumberOpts.tags")
                 add(filter.expression)
@@ -76,10 +68,4 @@ object CucumberAdapter : WdioFrameworkAdapter {
         }
     }
 
-    private fun lineNumberFor(element: PsiElement): Int {
-        val document: Document = PsiDocumentManager.getInstance(element.project)
-            .getDocument(element.containingFile)
-            ?: return 1
-        return document.getLineNumber(element.textRange.startOffset) + 1
-    }
 }

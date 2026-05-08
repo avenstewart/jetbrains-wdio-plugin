@@ -39,10 +39,10 @@ class WdioRunSettingsSerializerTest {
     }
 
     @Test
-    fun `cucumber line filter round-trips`() {
-        val original = WdioRunSettings(testFilter = TestFilter.CucumberLine(42))
+    fun `cucumber name filter round-trips`() {
+        val original = WdioRunSettings(testFilter = TestFilter.CucumberName("^my scenario$"))
         val restored = WdioRunSettingsSerializer.readFromXml(roundTrip(original))
-        assertEquals(TestFilter.CucumberLine(42), restored.testFilter)
+        assertEquals(TestFilter.CucumberName("^my scenario$"), restored.testFilter)
     }
 
     @Test
