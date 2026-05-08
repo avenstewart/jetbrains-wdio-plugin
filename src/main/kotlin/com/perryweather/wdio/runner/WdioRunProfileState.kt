@@ -20,7 +20,6 @@ import com.intellij.javascript.nodejs.debug.NodeLocalDebuggableRunProfileStateSy
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreter
 import com.intellij.javascript.nodejs.util.NodePackage
 import com.intellij.openapi.project.Project
-import com.jetbrains.nodejs.mocha.execution.MochaRunProfileState
 import com.perryweather.wdio.config.WdioRunSettings
 import com.perryweather.wdio.console.WdioConsoleProperties
 import com.perryweather.wdio.framework.MochaAdapter
@@ -64,7 +63,8 @@ class WdioRunProfileState(
         NodeCommandLineUtil.configureUsefulEnvironment(commandLine)
         NodeCommandLineUtil.prependNodeDirToPATH(commandLine, interpreter)
 
-        val wdioCliMainJs = MochaRunProfileState.getMochaMainJsFile(interpreter, wdioPackage).absolutePath
+        val wdioCliMainJs = wdioPackage.findBinFilePath("wdio", null)?.toAbsolutePath()?.toString()
+            ?: throw ExecutionException("Cannot resolve @wdio/cli bin file from ${wdioPackage.systemDependentPath}")
         val adapter = WdioFrameworkAdapter.forFramework(runSettings.framework) ?: MochaAdapter
 
         WdioCommandLineBuilder.apply(
