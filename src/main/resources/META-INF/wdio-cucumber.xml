@@ -1,0 +1,9 @@
+<idea-plugin>
+    <!-- Loaded only when the Gherkin plugin is present. Without it, the core plugin
+         keeps Mocha and Jasmine support working but does not register Gherkin gutter
+         markers and does not invoke the Cucumber adapter. -->
+    <extensions defaultExtensionNs="com.intellij">
+        <runLineMarkerContributor language="Gherkin"
+                                  implementationClass="com.perryweather.wdio.producer.WdioGherkinLineMarkerContributor"/>
+    </extensions>
+</idea-plugin>

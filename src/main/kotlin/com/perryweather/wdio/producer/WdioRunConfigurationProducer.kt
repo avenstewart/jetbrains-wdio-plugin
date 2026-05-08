@@ -114,10 +114,16 @@ class WdioRunConfigurationProducer : JsPackageDependentTestRunConfigurationProdu
     private fun adapterFor(configuration: WdioRunConfiguration, element: PsiElement): WdioFrameworkAdapter {
         // Gherkin clicks always go to the Cucumber adapter regardless of the configured
         // framework, so we don't try to send a .feature file through Mocha or Jasmine.
-        if (CucumberAdapter.matches(element)) return CucumberAdapter
+        // Guarded by gherkinAvailable so the core plugin loads cleanly on IDEA Ultimate
+        // without the Gherkin marketplace plugin (referencing GherkinFile would crash there).
+        if (gherkinAvailable && CucumberAdapter.matches(element)) return CucumberAdapter
         return WdioFrameworkAdapter.forFramework(configuration.runSettings.framework)
             ?.takeIf { it.framework != Framework.CUCUMBER }
             ?: MochaAdapter
+    }
+
+    private val gherkinAvailable: Boolean by lazy {
+        runCatching { Class.forName("org.jetbrains.plugins.cucumber.psi.GherkinFile") }.isSuccess
     }
 
     private fun isActiveFor(element: PsiElement, context: ConfigurationContext): Boolean {
